@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis Results</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .result-card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .result-card:hover {
+            transform: translateY(-2px);
+        }
+        .sentiment-badge {
+            font-size: 1.5rem;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .score-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            height: 100%;
+            transition: transform 0.3s ease;
+        }
+        .score-card:hover {
+            transform: scale(1.05);
+        }
+        .score-number {
+            font-size: 3rem;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .progress-custom {
+            height: 15px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.2);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .progress-custom .progress-bar {
+            border-radius: 10px;
+        }
+        .btn-action {
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .text-display {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 1.5rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin: 1rem 0;
+        }
+        .analysis-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+        .word-count {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .confidence-meter {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="gradient-bg">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <h1 class="display-4 mb-3 fw-bold">
+                        <i class="fas fa-chart-bar me-3"></i>
+                        Analysis Complete
+                    </h1>
+                    <p class="lead">
+                        Your text has been analyzed using advanced natural language processing
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+                <!-- Original Text -->
+                <div class="card result-card mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-file-text me-2"></i>
+                            Original Text
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-display">
+                            {{ text }}
+                        </div>
+                        <div class="word-count">
+                            <i class="fas fa-calculator me-1"></i>
+                            <span id="word-count">{{ text.split()|length }}</span> words • 
+                            <span id="char-count">{{ text|length }}</span> characters
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sentiment Classification -->
+                <div class="card result-card mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-tag me-2"></i>
+                            Sentiment Classification
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        {% if sentiment == 'Positive' %}
+                            <div class="sentiment-badge bg-success text-white d-inline-block">
+                                <i class="fas fa-smile fa-2x mb-2 d-block"></i>
+                                {{ sentiment }}
+                            </div>
+                        {% elif sentiment == 'Negative' %}
+                            <div class="sentiment-badge bg-danger text-white d-inline-block">
+                                <i class="fas fa-frown fa-2x mb-2 d-block"></i>
+                                {{ sentiment }}
+                            </div>
+                        {% else %}
+                            <div class="sentiment-badge bg-secondary text-white d-inline-block">
+                                <i class="fas fa-meh fa-2x mb-2 d-block"></i>
+                                {{ sentiment }}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Confidence Level -->
+                        <div class="mt-4">
+                            <h6>Confidence Level</h6>
+                            <div class="confidence-meter">
+                                <div class="confidence-fill" style="width: {{ ((polarity|abs * 100) if polarity != 0 else 50)|round }}%"></div>
+                            </div>
+                            <small class="text-muted">
+                                {% if polarity|abs > 0.7 %}
+                                    Very High Confidence
+                                {% elif polarity|abs > 0.3 %}
+                                    High Confidence
+                                {% elif polarity|abs > 0.1 %}
+                                    Moderate Confidence
+                                {% else %}
+                                    Low Confidence (Neutral)
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Scores -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-4">
+                        <div class="score-card">
+                            <i class="fas fa-balance-scale fa-3x mb-3"></i>
+                            <h5 class="mb-3">Polarity Score</h5>
+                            <div class="score-number">{{ "%.3f"|format(polarity) }}</div>
+                            <div class="progress-custom mt-3">
+                                <div class="progress-bar 
+                                    {% if polarity > 0 %}bg-success
+                                    {% elif polarity < 0 %}bg-danger
+                                    {% else %}bg-secondary
+                                    {% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ ((polarity + 1) * 50)|round }}%">
+                                </div>
+                            </div>
+                            <small class="mt-2 d-block opacity-75">
+                                Range: -1 (very negative) to +1 (very positive)
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="score-card">
+                            <i class="fas fa-eye fa-3x mb-3"></i>
+                            <h5 class="mb-3">Subjectivity Score</h5>
+                            <div class="score-number">{{ "%.3f"|format(subjectivity) }}</div>
+                            <div class="progress-custom mt-3">
+                                <div class="progress-bar bg-info" 
+                                    role="progressbar" 
+                                    style="width: {{ (subjectivity * 100)|round }}%">
+                                </div>
+                            </div>
+                            <small class="mt-2 d-block opacity-75">
+                                Range: 0 (objective) to 1 (subjective)
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Summary -->
+                <div class="analysis-summary">
+                    <h5 class="mb-3">
+                        <i class="fas fa-brain me-2"></i>
+                        Analysis Summary
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Interpretation:</h6>
+                            <p class="mb-2">
+                                {% if sentiment == 'Positive' %}
+                                    This text expresses positive emotions and favorable opinions.
+                                {% elif sentiment == 'Negative' %}
+                                    This text expresses negative emotions and unfavorable opinions.
+                                {% else %}
+                                    This text maintains a neutral tone without strong emotional bias.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Objectivity:</h6>
+                            <p class="mb-2">
+                                {% if subjectivity > 0.7 %}
+                                    Highly subjective - contains strong personal opinions and emotions.
+                                {% elif subjectivity > 0.3 %}
+                                    Moderately subjective - contains some personal views and emotions.
+                                {% else %}
+                                    Mostly objective - contains factual information with minimal bias.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="text-center">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary btn-action">
+                        <i class="fas fa-redo me-2"></i>
+                        Try Another Text
+                    </a>
+                    <button onclick="shareResults()" class="btn btn-success btn-action">
+                        <i class="fas fa-share-alt me-2"></i>
+                        Share Results
+                    </button>
+                    <button onclick="exportResults()" class="btn btn-info btn-action">
+                        <i class="fas fa-download me-2"></i>
+                        Export Data
+                    </button>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="card mt-5">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            Understanding Your Results
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6 class="text-success">Positive Sentiment</h6>
+                                <p class="small">Polarity > 0 indicates positive emotions, satisfaction, or approval.</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-danger">Negative Sentiment</h6>
+                                <p class="small">Polarity < 0 indicates negative emotions, dissatisfaction, or disapproval.</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-secondary">Neutral Sentiment</h6>
+                                <p class="small">Polarity = 0 indicates neutral or balanced emotions.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Data for export and sharing
+        const analysisData = {
+            text: {{ text|tojson }},
+            polarity: {{ polarity }},
+            subjectivity: {{ subjectivity }},
+            sentiment: {{ sentiment|tojson }},
+            timestamp: new Date().toISOString(),
+            wordCount: {{ text.split()|length }},
+            charCount: {{ text|length }}
+        };
+
+        // Export results as JSON
+        function exportResults() {
+            const dataStr = JSON.stringify(analysisData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'sentiment_analysis_' + new Date().toISOString().split('T')[0] + '.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        // Share results
+        function shareResults() {
+            const shareText = `Sentiment Analysis Results:
+            
+Text: "${analysisData.text}"
+Sentiment: ${analysisData.sentiment}
+Polarity: ${analysisData.polarity.toFixed(3)}
+Subjectivity: ${analysisData.subjectivity.toFixed(3)}
+
+Analyzed using AI-powered sentiment analysis tool.`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Sentiment Analysis Results',
+                    text: shareText
+                });
+            } else {
+                // Fallback - copy to clipboard
+                navigator.clipboard.writeText(shareText).then(() => {
+                    alert('Results copied to clipboard!');
+                });
+            }
+        }
+
+        // Animate progress bars on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBars = document.querySelectorAll('.progress-bar');
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.transition = 'width 1s ease-in-out';
+                    bar.style.width = width;
+                }, 500);
+            });
+
+            // Animate confidence meter
+            const confidenceFill = document.querySelector('.confidence-fill');
+            if (confidenceFill) {
+                const width = confidenceFill.style.width;
+                confidenceFill.style.width = '0%';
+                setTimeout(() => {
+                    confidenceFill.style.width = width;
+                }, 800);
+            }
+        });
+
+        // Add some interactive hover effects
+        document.querySelectorAll('.score-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.05)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

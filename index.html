@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis Tool</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+        }
+        .feature-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            border-radius: 15px;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .main-card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        .btn-analyze {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .text-counter {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        .form-control {
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="gradient-bg">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <h1 class="display-3 mb-4 fw-bold">
+                        <i class="fas fa-brain me-3"></i>
+                        Sentiment Analysis Tool
+                    </h1>
+                    <p class="lead fs-5">
+                        Discover the emotions behind your text using advanced AI-powered natural language processing
+                    </p>
+                    <div class="stats-card d-inline-block mt-3">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <span id="analysis-count">0</span> analyses completed today
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Quick Tips -->
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="card feature-card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-lightbulb text-warning fa-2x mb-3"></i>
+                                <h6 class="card-title">Smart Analysis</h6>
+                                <p class="card-text small">AI-powered sentiment detection with accuracy scores</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card feature-card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-clock text-success fa-2x mb-3"></i>
+                                <h6 class="card-title">Instant Results</h6>
+                                <p class="card-text small">Get detailed sentiment analysis in seconds</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card feature-card h-100 text-center">
+                            <div class="card-body">
+                                <i class="fas fa-shield-alt text-primary fa-2x mb-3"></i>
+                                <h6 class="card-title">Privacy First</h6>
+                                <p class="card-text small">Your text is processed securely and not stored</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'info' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Main Form -->
+                <div class="card main-card shadow-lg">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0 text-center">
+                            <i class="fas fa-edit me-2"></i>
+                            Enter Text for Analysis
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST" action="{{ url_for('analyze') }}" id="sentiment-form">
+                            <div class="mb-4 position-relative">
+                                <label for="text" class="form-label fw-bold">Your Text</label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="text" 
+                                    name="text" 
+                                    rows="8" 
+                                    placeholder="Enter the text you want to analyze for sentiment. This could be a review, comment, social media post, or any other text..."
+                                    required
+                                    maxlength="5000"
+                                    oninput="updateCharCount(this)"
+                                ></textarea>
+                                <div class="text-counter" id="char-count">0 / 5000</div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    The analysis will provide polarity (-1 to +1) and subjectivity (0 to 1) scores.
+                                </div>
+                            </div>
+                            
+                            <!-- Sample Texts -->
+                            <div class="mb-4">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-magic me-2"></i>
+                                    Try these sample texts:
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <button type="button" class="btn btn-outline-success btn-sm w-100" 
+                                                onclick="setSampleText('positive')">
+                                            <i class="fas fa-smile me-1"></i>
+                                            Positive Sample
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <button type="button" class="btn btn-outline-danger btn-sm w-100" 
+                                                onclick="setSampleText('negative')">
+                                            <i class="fas fa-frown me-1"></i>
+                                            Negative Sample
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm w-100" 
+                                                onclick="setSampleText('neutral')">
+                                            <i class="fas fa-meh me-1"></i>
+                                            Neutral Sample
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-analyze btn-lg">
+                                    <i class="fas fa-search me-2"></i>
+                                    Analyze Sentiment
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Information Section -->
+                <div class="row mt-5">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    About Polarity
+                                </h6>
+                                <p class="card-text small">
+                                    Polarity ranges from -1 to +1, where -1 indicates very negative sentiment, 
+                                    0 indicates neutral sentiment, and +1 indicates very positive sentiment.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    About Subjectivity
+                                </h6>
+                                <p class="card-text small">
+                                    Subjectivity ranges from 0 to 1, where 0 indicates objective text 
+                                    (facts) and 1 indicates subjective text (opinions, emotions).
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample texts for demonstration
+        const sampleTexts = {
+            positive: "I absolutely love this product! It has exceeded all my expectations and made my life so much easier. The quality is outstanding and the customer service is incredible. I would definitely recommend this to everyone!",
+            negative: "I'm extremely disappointed with this purchase. The product broke after just one day of use, and the customer service was rude and unhelpful. This is a complete waste of money and I regret buying it.",
+            neutral: "The weather today is partly cloudy with a temperature of 72 degrees. The forecast shows possible rain later in the evening. Traffic on the main highway is moving at normal speeds."
+        };
+
+        // Set sample text
+        function setSampleText(type) {
+            const textArea = document.getElementById('text');
+            textArea.value = sampleTexts[type];
+            updateCharCount(textArea);
+            textArea.focus();
+        }
+
+        // Update character count
+        function updateCharCount(element) {
+            const count = element.value.length;
+            const maxLength = element.getAttribute('maxlength');
+            document.getElementById('char-count').textContent = `${count} / ${maxLength}`;
+            
+            if (count > maxLength * 0.9) {
+                document.getElementById('char-count').style.color = '#dc3545';
+            } else if (count > maxLength * 0.7) {
+                document.getElementById('char-count').style.color = '#fd7e14';
+            } else {
+                document.getElementById('char-count').style.color = '#6c757d';
+            }
+        }
+
+        // Initialize analysis counter from localStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            const analysisCount = localStorage.getItem('analysisCount') || 0;
+            document.getElementById('analysis-count').textContent = analysisCount;
+        });
+
+        // Form submission animation
+        document.getElementById('sentiment-form').addEventListener('submit', function(e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing...';
+            submitBtn.disabled = true;
+            
+            // Increment analysis counter
+            const currentCount = parseInt(localStorage.getItem('analysisCount') || 0) + 1;
+            localStorage.setItem('analysisCount', currentCount);
+        });
+
+        // Add typing effect to placeholder
+        let placeholderTexts = [
+            "Enter a product review...",
+            "Share your thoughts...",
+            "Type a social media post...",
+            "Write a customer feedback...",
+            "Enter any text to analyze..."
+        ];
+        let currentIndex = 0;
+
+        function rotatePlaceholder() {
+            const textArea = document.getElementById('text');
+            if (textArea.value === '') {
+                textArea.placeholder = placeholderTexts[currentIndex];
+                currentIndex = (currentIndex + 1) % placeholderTexts.length;
+            }
+        }
+
+        // Rotate placeholder every 3 seconds
+        setInterval(rotatePlaceholder, 3000);
+    </script>
+</body>
+</html>
