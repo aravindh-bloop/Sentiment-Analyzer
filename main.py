@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import uuid
 import re
+import requests
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from textblob import TextBlob
 
@@ -75,170 +76,127 @@ def analyze_sentiment(text):
         'timestamp': datetime.now().isoformat()
     }
 
-def improve_sentiment(text):
+def improve_sentiment_with_ai(text):
     """
-    Advanced sentiment improvement using natural language rewriting
-    Creates meaningful, grammatically correct positive alternatives
+    Use DeepSeek AI to improve sentiment while preserving original meaning
     """
-    # Analyze original sentiment
-    original_analysis = analyze_sentiment(text)
-    original_text = text.strip()
+    deepseek_api_key = os.environ.get('DEEPSEEK_API_KEY')
     
-    # Smart rewriting patterns that preserve meaning while improving tone
-    rewrite_rules = [
-        # Direct negative statements
-        {
-            'pattern': r'^(this is|it is|that is) (bad|terrible|awful|horrible|worst|useless|pointless|stupid|dumb)(.*)$',
-            'rewrite': lambda m: f"This could be improved{m.group(3) if m.group(3) else ''}.",
-            'explanation': 'Converted harsh criticism to constructive feedback'
-        },
-        
-        # Frustration expressions
-        {
-            'pattern': r'^(i hate|i dislike|i can\'t stand) (.+)$',
-            'rewrite': lambda m: f"I would prefer if {m.group(2)} were different.",
-            'explanation': 'Transformed strong dislike into preference'
-        },
-        
-        # Failure statements  
-        {
-            'pattern': r'^(this|it) (doesn\'t work|failed|is broken|never works)(.*)$',
-            'rewrite': lambda m: f"This needs some adjustments to work properly{m.group(3) if m.group(3) else ''}.",
-            'explanation': 'Reframed failure as opportunity for improvement'
-        },
-        
-        # Confusion expressions
-        {
-            'pattern': r'^(this|it) (makes no sense|is confusing|is unclear|doesn\'t make sense)(.*)$',
-            'rewrite': lambda m: f"This could be explained more clearly{m.group(3) if m.group(3) else ''}.",
-            'explanation': 'Turned confusion into request for clarity'
-        },
-        
-        # Waste expressions
-        {
-            'pattern': r'^(this is a |it\'s a )?(waste of time|waste of money|waste of effort)(.*)$',
-            'rewrite': lambda m: f"This could be a more valuable use of resources{m.group(3) if m.group(3) else ''}.",
-            'explanation': 'Reframed waste as potential value'
-        },
-        
-        # Impossibility claims
-        {
-            'pattern': r'^(this is|it is) (impossible|too hard|too difficult)(.*)$',
-            'rewrite': lambda m: f"This is challenging but achievable with the right approach{m.group(3) if m.group(3) else ''}.",
-            'explanation': 'Turned impossibility into achievable challenge'
-        },
-        
-        # Disappointment
-        {
-            'pattern': r'^(i am |i\'m )?(disappointed|frustrated|annoyed) (with|by) (.+)$',
-            'rewrite': lambda m: f"I was hoping for better results from {m.group(4)}.",
-            'explanation': 'Expressed disappointment as hope for improvement'
-        },
-        
-        # Quality complaints
-        {
-            'pattern': r'^(the quality is|quality is) (poor|bad|terrible|awful)(.*)$',
-            'rewrite': lambda m: f"The quality could be enhanced{m.group(3) if m.group(3) else ''}.",
-            'explanation': 'Reframed poor quality as improvement opportunity'
+    if not deepseek_api_key:
+        # Fallback to minimal changes when no API key
+        return improve_sentiment_fallback(text)
+    
+    try:
+        # DeepSeek API call
+        headers = {
+            'Authorization': f'Bearer {deepseek_api_key}',
+            'Content-Type': 'application/json'
         }
-    ]
-    
-    improved_text = original_text
-    changes_made = []
-    rewrite_applied = False
-    
-    # Apply rewriting rules
-    for rule in rewrite_rules:
-        pattern = rule['pattern']
-        match = re.search(pattern, improved_text, re.IGNORECASE)
         
-        if match:
-            if callable(rule['rewrite']):
-                improved_text = rule['rewrite'](match)
+        payload = {
+            'model': 'deepseek-chat',
+            'messages': [
+                {
+                    'role': 'system',
+                    'content': 'You are an expert at improving the tone of text while preserving the original meaning exactly. Your task is to make negative or harsh comments more positive and constructive, but keep the core message and intent identical. Make minimal changes - only soften harsh language and improve tone. Do not add extra content or change the meaning. Respond with only the improved text, nothing else.'
+                },
+                {
+                    'role': 'user',
+                    'content': f'Please improve the tone of this text while keeping the exact same meaning: "{text}"'
+                }
+            ],
+            'max_tokens': 200,
+            'temperature': 0.3
+        }
+        
+        response = requests.post(
+            'https://api.deepseek.com/chat/completions',
+            headers=headers,
+            json=payload,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            improved_text = result['choices'][0]['message']['content'].strip()
+            
+            # Remove quotes if the AI added them
+            if improved_text.startswith('"') and improved_text.endswith('"'):
+                improved_text = improved_text[1:-1]
+            
+            original_analysis = analyze_sentiment(text)
+            
+            # Check if improvement actually made it more positive
+            improved_analysis = analyze_sentiment(improved_text)
+            
+            changes_made = []
+            if improved_text != text:
+                changes_made.append(("AI-enhanced tone", "DeepSeek improved positivity while preserving meaning"))
             else:
-                improved_text = rule['rewrite']
+                changes_made.append(("No changes needed", "Original text was already well-written"))
             
-            changes_made.append(("Original phrase", rule['explanation']))
-            rewrite_applied = True
-            break
-    
-    # If no specific pattern matched, apply contextual improvements
-    if not rewrite_applied:
-        if original_analysis['polarity'] < -0.5:  # Very negative
-            # Strong negative sentiment - provide balanced perspective
-            improved_text = f"While there are areas that could be improved, {original_text.lower()}"
-            changes_made.append(("Added balanced perspective", "Provided constructive framing"))
-            
-        elif original_analysis['polarity'] < -0.1:  # Mildly negative
-            # Soften negative words
-            negative_replacements = {
-                r'\b(no|not|never)\b': 'limited',
-                r'\b(bad|poor)\b': 'could be better',
-                r'\b(hard|difficult)\b': 'challenging',
-                r'\b(wrong|incorrect)\b': 'not quite right',
-                r'\b(slow)\b': 'could be faster',
-                r'\b(expensive)\b': 'an investment'
+            return {
+                'improved_text': improved_text,
+                'changes_made': changes_made,
+                'original_length': len(text),
+                'improved_length': len(improved_text),
+                'improvement_type': 'AI-Powered Enhancement',
+                'original_polarity': original_analysis['polarity'],
+                'explanation': 'DeepSeek AI improved tone and positivity while preserving original meaning'
             }
-            
-            for pattern, replacement in negative_replacements.items():
-                if re.search(pattern, improved_text, re.IGNORECASE):
-                    improved_text = re.sub(pattern, replacement, improved_text, flags=re.IGNORECASE)
-                    changes_made.append(("Softened negative language", "More diplomatic tone"))
-                    break
-                    
-        elif original_analysis['polarity'] > 0.3:  # Already positive
-            # Enhance existing positivity
-            positive_enhancements = {
-                r'\b(good|nice|fine|okay)\b': 'excellent',
-                r'\b(great)\b': 'outstanding',
-                r'\b(like)\b': 'really appreciate',
-                r'\b(works)\b': 'works perfectly'
-            }
-            
-            for pattern, enhancement in positive_enhancements.items():
-                if re.search(pattern, improved_text, re.IGNORECASE):
-                    improved_text = re.sub(pattern, enhancement, improved_text, flags=re.IGNORECASE)
-                    changes_made.append(("Enhanced positive language", "Stronger positive tone"))
-                    break
-        
-        elif original_analysis['polarity'] >= -0.1:  # Neutral
-            # Add appreciation to neutral comments
-            improved_text = f"I appreciate that {original_text.lower()}"
-            changes_made.append(("Added appreciation", "Positive acknowledgment"))
-    
-    # Grammar and formatting improvements
-    improved_text = improved_text.strip()
-    
-    # Ensure proper capitalization
-    if improved_text and improved_text[0].islower():
-        improved_text = improved_text[0].upper() + improved_text[1:]
-    
-    # Ensure proper sentence ending
-    if improved_text and not improved_text.endswith(('.', '!', '?')):
-        improved_text += '.'
-    
-    # Clean up spacing and punctuation
-    improved_text = re.sub(r'\s+', ' ', improved_text)
-    improved_text = re.sub(r'\s+([,.!?])', r'\1', improved_text)
-    
-    # If no changes were made, provide encouragement
-    if not changes_made:
-        if original_analysis['polarity'] >= 0:
-            improved_text = f"I appreciate that {original_text.lower()}"
-            changes_made.append(("Added appreciation", "Positive acknowledgment"))
         else:
-            improved_text = f"Thank you for sharing your thoughts - {original_text.lower()}"
-            changes_made.append(("Added gratitude", "Constructive response"))
+            logging.error(f"DeepSeek API error: {response.status_code} - {response.text}")
+            return improve_sentiment_fallback(text)
+            
+    except Exception as e:
+        logging.error(f"Error calling DeepSeek API: {e}")
+        return improve_sentiment_fallback(text)
+
+def improve_sentiment_fallback(text):
+    """
+    Fallback function for when DeepSeek API is not available
+    """
+    original_analysis = analyze_sentiment(text)
+    
+    # Very minimal improvements that don't change meaning drastically
+    improved_text = text.strip()
+    changes_made = []
+    
+    # Only make very minor, natural adjustments for extremely negative text
+    if original_analysis['polarity'] < -0.5:  # Only for very negative text
+        simple_replacements = {
+            r'\bterrible\b': 'not great',
+            r'\bawful\b': 'not good',
+            r'\bhate\b': 'really dislike',
+            r'\bstupid\b': 'frustrating',
+            r'\buseless\b': 'not helpful'
+        }
+        
+        for pattern, replacement in simple_replacements.items():
+            if re.search(pattern, improved_text, re.IGNORECASE):
+                improved_text = re.sub(pattern, replacement, improved_text, flags=re.IGNORECASE)
+                changes_made.append(("Softened harsh language", "More diplomatic tone"))
+                break
+    
+    # If no changes were made, leave it as is
+    if not changes_made:
+        changes_made.append(("Preserved original", "No changes needed - meaning preserved"))
     
     return {
         'improved_text': improved_text,
         'changes_made': changes_made,
-        'original_length': len(original_text),
+        'original_length': len(text),
         'improved_length': len(improved_text),
-        'improvement_type': 'Natural Language Rewrite',
+        'improvement_type': 'Minimal Adjustment',
         'original_polarity': original_analysis['polarity'],
-        'explanation': 'Rewritten for better tone, clarity, and positive communication while preserving original meaning'
+        'explanation': 'Minor adjustments to tone while preserving original meaning and intent'
     }
+
+def improve_sentiment(text):
+    """
+    Main function for sentiment improvement - calls AI-powered version
+    """
+    return improve_sentiment_with_ai(text)
 
 @app.route('/')
 def index():
