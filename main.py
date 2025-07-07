@@ -77,154 +77,165 @@ def analyze_sentiment(text):
 
 def improve_sentiment(text):
     """
-    Advanced sentiment improvement using grammar-enhanced full-sentence rewrites
-    Similar to Grammarly - preserves meaning while improving tone and clarity
+    Advanced sentiment improvement using natural language rewriting
+    Creates meaningful, grammatically correct positive alternatives
     """
     # Analyze original sentiment
     original_analysis = analyze_sentiment(text)
+    original_text = text.strip()
     
-    # Advanced sentence rewriting patterns
-    rewrite_patterns = [
-        # Negative expressions to positive alternatives
+    # Smart rewriting patterns that preserve meaning while improving tone
+    rewrite_rules = [
+        # Direct negative statements
         {
-            'patterns': [
-                r"this is (bad|terrible|awful|horrible|worst)",
-                r"this (sucks|is terrible|is awful|is bad)",
-                r"(hate|dislike) this",
-                r"this (doesn't work|failed|is broken)",
-                r"this is (useless|worthless|pointless)"
-            ],
-            'rewrites': [
-                "this could be improved and has potential",
-                "this has room for enhancement",
-                "this would benefit from some adjustments",
-                "this presents opportunities for improvement",
-                "this can be developed into something better"
-            ]
+            'pattern': r'^(this is|it is|that is) (bad|terrible|awful|horrible|worst|useless|pointless|stupid|dumb)(.*)$',
+            'rewrite': lambda m: f"This could be improved{m.group(3) if m.group(3) else ''}.",
+            'explanation': 'Converted harsh criticism to constructive feedback'
         },
         
-        # Frustration to constructive feedback
+        # Frustration expressions
         {
-            'patterns': [
-                r"(why|how) is this so (bad|terrible|awful|confusing|hard|difficult)",
-                r"this (makes no sense|is confusing|is unclear)",
-                r"(can't|cannot) understand this",
-                r"this is (too hard|too difficult|impossible)",
-                r"this (doesn't|does not) make sense"
-            ],
-            'rewrites': [
-                "this would be clearer with better explanation",
-                "this concept could be presented more clearly",
-                "this would benefit from additional context",
-                "this has potential but needs clearer communication",
-                "this idea could be expressed more effectively"
-            ]
+            'pattern': r'^(i hate|i dislike|i can\'t stand) (.+)$',
+            'rewrite': lambda m: f"I would prefer if {m.group(2)} were different.",
+            'explanation': 'Transformed strong dislike into preference'
         },
         
-        # Complaints to suggestions
+        # Failure statements  
         {
-            'patterns': [
-                r"(complaining|complain) about",
-                r"this (problem|issue|bug)",
-                r"(disappointed|frustrated|annoyed) (with|by)",
-                r"this (never|doesn't) work",
-                r"waste of (time|money|effort)"
-            ],
-            'rewrites': [
-                "providing feedback about",
-                "this area for improvement",
-                "hoping for better results with",
-                "this needs some attention to work properly",
-                "valuable learning experience"
-            ]
+            'pattern': r'^(this|it) (doesn\'t work|failed|is broken|never works)(.*)$',
+            'rewrite': lambda m: f"This needs some adjustments to work properly{m.group(3) if m.group(3) else ''}.",
+            'explanation': 'Reframed failure as opportunity for improvement'
         },
         
-        # Harsh criticism to constructive feedback
+        # Confusion expressions
         {
-            'patterns': [
-                r"this is (stupid|dumb|ridiculous|absurd)",
-                r"(whoever|who) (made|created|designed) this",
-                r"this (obviously|clearly) (doesn't|does not) work",
-                r"this is (completely|totally) (wrong|incorrect|useless)",
-                r"this (fails|sucks) at"
-            ],
-            'rewrites': [
-                "this approach could be reconsidered",
-                "the creator might want to revisit this",
-                "this would work better with some adjustments",
-                "this has potential but needs refinement",
-                "this could be more effective at"
-            ]
+            'pattern': r'^(this|it) (makes no sense|is confusing|is unclear|doesn\'t make sense)(.*)$',
+            'rewrite': lambda m: f"This could be explained more clearly{m.group(3) if m.group(3) else ''}.",
+            'explanation': 'Turned confusion into request for clarity'
+        },
+        
+        # Waste expressions
+        {
+            'pattern': r'^(this is a |it\'s a )?(waste of time|waste of money|waste of effort)(.*)$',
+            'rewrite': lambda m: f"This could be a more valuable use of resources{m.group(3) if m.group(3) else ''}.",
+            'explanation': 'Reframed waste as potential value'
+        },
+        
+        # Impossibility claims
+        {
+            'pattern': r'^(this is|it is) (impossible|too hard|too difficult)(.*)$',
+            'rewrite': lambda m: f"This is challenging but achievable with the right approach{m.group(3) if m.group(3) else ''}.",
+            'explanation': 'Turned impossibility into achievable challenge'
+        },
+        
+        # Disappointment
+        {
+            'pattern': r'^(i am |i\'m )?(disappointed|frustrated|annoyed) (with|by) (.+)$',
+            'rewrite': lambda m: f"I was hoping for better results from {m.group(4)}.",
+            'explanation': 'Expressed disappointment as hope for improvement'
+        },
+        
+        # Quality complaints
+        {
+            'pattern': r'^(the quality is|quality is) (poor|bad|terrible|awful)(.*)$',
+            'rewrite': lambda m: f"The quality could be enhanced{m.group(3) if m.group(3) else ''}.",
+            'explanation': 'Reframed poor quality as improvement opportunity'
         }
     ]
     
-    # Apply sophisticated rewriting
-    improved_text = text.lower().strip()
+    improved_text = original_text
     changes_made = []
     rewrite_applied = False
     
-    # Try pattern-based rewriting first
-    for pattern_group in rewrite_patterns:
-        for i, pattern in enumerate(pattern_group['patterns']):
-            if re.search(pattern, improved_text, re.IGNORECASE):
-                rewrite_index = i % len(pattern_group['rewrites'])
-                rewrite_template = pattern_group['rewrites'][rewrite_index]
-                
-                # Apply the rewrite while preserving context
-                improved_text = re.sub(pattern, rewrite_template, improved_text, flags=re.IGNORECASE)
-                changes_made.append(("Rewritten for positivity", "Enhanced tone and clarity"))
-                rewrite_applied = True
-                break
+    # Apply rewriting rules
+    for rule in rewrite_rules:
+        pattern = rule['pattern']
+        match = re.search(pattern, improved_text, re.IGNORECASE)
         
-        if rewrite_applied:
+        if match:
+            if callable(rule['rewrite']):
+                improved_text = rule['rewrite'](match)
+            else:
+                improved_text = rule['rewrite']
+            
+            changes_made.append(("Original phrase", rule['explanation']))
+            rewrite_applied = True
             break
     
-    # If no pattern matches, apply contextual improvements
+    # If no specific pattern matched, apply contextual improvements
     if not rewrite_applied:
-        if original_analysis['polarity'] < -0.3:  # Very negative
-            # Add constructive framing
-            improved_text = f"While there are areas for improvement, {improved_text}"
-            changes_made.append(("Added constructive framing", "Balanced perspective"))
-        elif original_analysis['polarity'] < 0:  # Mildly negative
-            # Soften the tone
-            improved_text = re.sub(r'\b(no|not|never|nothing)\b', 'limited', improved_text)
-            improved_text = re.sub(r'\b(bad|poor|terrible)\b', 'could be better', improved_text)
-            changes_made.append(("Softened negative language", "More diplomatic tone"))
+        if original_analysis['polarity'] < -0.5:  # Very negative
+            # Strong negative sentiment - provide balanced perspective
+            improved_text = f"While there are areas that could be improved, {original_text.lower()}"
+            changes_made.append(("Added balanced perspective", "Provided constructive framing"))
+            
+        elif original_analysis['polarity'] < -0.1:  # Mildly negative
+            # Soften negative words
+            negative_replacements = {
+                r'\b(no|not|never)\b': 'limited',
+                r'\b(bad|poor)\b': 'could be better',
+                r'\b(hard|difficult)\b': 'challenging',
+                r'\b(wrong|incorrect)\b': 'not quite right',
+                r'\b(slow)\b': 'could be faster',
+                r'\b(expensive)\b': 'an investment'
+            }
+            
+            for pattern, replacement in negative_replacements.items():
+                if re.search(pattern, improved_text, re.IGNORECASE):
+                    improved_text = re.sub(pattern, replacement, improved_text, flags=re.IGNORECASE)
+                    changes_made.append(("Softened negative language", "More diplomatic tone"))
+                    break
+                    
         elif original_analysis['polarity'] > 0.3:  # Already positive
             # Enhance existing positivity
-            improved_text = re.sub(r'\b(good|nice|fine|okay)\b', 'excellent', improved_text)
-            changes_made.append(("Enhanced positive language", "Stronger positive tone"))
+            positive_enhancements = {
+                r'\b(good|nice|fine|okay)\b': 'excellent',
+                r'\b(great)\b': 'outstanding',
+                r'\b(like)\b': 'really appreciate',
+                r'\b(works)\b': 'works perfectly'
+            }
+            
+            for pattern, enhancement in positive_enhancements.items():
+                if re.search(pattern, improved_text, re.IGNORECASE):
+                    improved_text = re.sub(pattern, enhancement, improved_text, flags=re.IGNORECASE)
+                    changes_made.append(("Enhanced positive language", "Stronger positive tone"))
+                    break
+        
+        elif original_analysis['polarity'] >= -0.1:  # Neutral
+            # Add appreciation to neutral comments
+            improved_text = f"I appreciate that {original_text.lower()}"
+            changes_made.append(("Added appreciation", "Positive acknowledgment"))
     
-    # Grammar and clarity improvements
+    # Grammar and formatting improvements
     improved_text = improved_text.strip()
     
-    # Capitalize first letter and ensure proper sentence structure
-    if improved_text:
+    # Ensure proper capitalization
+    if improved_text and improved_text[0].islower():
         improved_text = improved_text[0].upper() + improved_text[1:]
-        
-        # Ensure proper sentence ending
-        if not improved_text.endswith(('.', '!', '?')):
-            improved_text += '.'
     
-    # Remove double spaces and fix common grammar issues
+    # Ensure proper sentence ending
+    if improved_text and not improved_text.endswith(('.', '!', '?')):
+        improved_text += '.'
+    
+    # Clean up spacing and punctuation
     improved_text = re.sub(r'\s+', ' ', improved_text)
     improved_text = re.sub(r'\s+([,.!?])', r'\1', improved_text)
     
-    # If no improvements were made, provide encouragement
+    # If no changes were made, provide encouragement
     if not changes_made:
         if original_analysis['polarity'] >= 0:
-            improved_text = f"I appreciate that {improved_text.lower()}"
+            improved_text = f"I appreciate that {original_text.lower()}"
             changes_made.append(("Added appreciation", "Positive acknowledgment"))
         else:
-            improved_text = f"Thank you for the feedback - {improved_text.lower()}"
+            improved_text = f"Thank you for sharing your thoughts - {original_text.lower()}"
             changes_made.append(("Added gratitude", "Constructive response"))
     
     return {
         'improved_text': improved_text,
         'changes_made': changes_made,
-        'original_length': len(text),
+        'original_length': len(original_text),
         'improved_length': len(improved_text),
-        'improvement_type': 'Grammar-Enhanced Rewrite',
+        'improvement_type': 'Natural Language Rewrite',
         'original_polarity': original_analysis['polarity'],
         'explanation': 'Rewritten for better tone, clarity, and positive communication while preserving original meaning'
     }
