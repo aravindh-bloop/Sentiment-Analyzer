@@ -94,7 +94,7 @@ def improve_sentiment_with_ai(text):
         }
         
         payload = {
-            'model': 'deepseek-chat',
+            'model': 'deepseek/deepseek-chat',
             'messages': [
                 {
                     'role': 'system',
@@ -105,12 +105,12 @@ def improve_sentiment_with_ai(text):
                     'content': f'Please improve the tone of this text while keeping the exact same meaning: "{text}"'
                 }
             ],
-            'max_tokens': 200,
-            'temperature': 0.3
+            'max_tokens': 50,
+            'temperature': 0.2
         }
         
         response = requests.post(
-            'https://api.deepseek.com/chat/completions',
+            'https://openrouter.ai/api/v1/chat/completions',
             headers=headers,
             json=payload,
             timeout=10
