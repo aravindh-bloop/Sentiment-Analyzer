@@ -2,6 +2,10 @@
 
 A beautiful, modern Flask-based web application that performs sentiment analysis on user-entered text using TextBlob. The application features an intuitive interface with advanced styling, interactive elements, and comprehensive sentiment analysis capabilities.
 
+#How to use it?
+* Just go to this link : 'https://sentiment-analyzer-80h3.onrender.com'
+* that's right!, I have taken the project to next level by hosting it live using Render.com!, go to the link given above and wait for 25-50 seconfs and use the AI integerated sentiment analyzer!
+
 ## Features
 
 ### 🎯 Core Functionality
